@@ -3,13 +3,14 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
+require("dotenv").config();
 const app = express();
 const port = 3000;
-const SECRET_KEY = "ABCDE";
+
+
 
 // Connect to MongoDB (replace 'your_mongodb_uri' with your actual MongoDB URI)
-mongoose.connect('mongodb://localhost:27017', { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect(process.env.MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true });
 
 app.use(bodyParser.json());
 
@@ -101,14 +102,19 @@ app.post('/signin', async (req, res) => {
 
   // Find the user by username
   const user = await User.findOne({ username });
-
+  if(!user){
+    return res.status(404).json({
+      success:false,
+      message:"User does not exist. Please SignUp first and try again."
+    })
+  }
   // If the user doesn't exist or the password is incorrect, return an error
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return res.status(401).json({ error: 'Invalid username or password' });
   }
 
   // Create a JWT token
-  const token = jwt.sign({ username: user.username }, SECRET_KEY, { expiresIn: '1h' });
+  const token = jwt.sign({ username: user.username }, process.env.SECRET_KEY, { expiresIn: '1h' });
 
   return res.status(200).json({
     data:token,
